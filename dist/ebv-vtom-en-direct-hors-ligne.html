@@ -76,6 +76,8 @@ button { cursor: pointer; }
 .eyebrow { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; }
 .muted { color: var(--muted); }
 a { color: var(--accent); }
+.home { color: inherit; text-decoration: none; border-radius: var(--radius); }
+.home:hover { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* top bar */
@@ -250,7 +252,7 @@ main { display: flex; flex-direction: column; gap: 20px; padding-top: 18px; }
 
 <header class="topbar">
   <div class="brand">
-    <h1>EBV VTOM en direct</h1>
+    <h1><a href="#jour" class="home" data-tab="jour" title="Revenir à la vue du jour">EBV VTOM en direct</a></h1>
     <small id="brandSub">Applications et étapes de la journée, lues depuis l'Expression de Besoin VTOM</small>
   </div>
   <div class="clock" id="clock">
@@ -866,7 +868,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   let searchT; $('#search').addEventListener('input', e => { clearTimeout(searchT); searchT = setTimeout(() => { state.search = e.target.value; renderAll(); }, 120); });
 
   document.addEventListener('click', e => {
-    const tab = e.target.closest('[data-tab]'); if (tab) { goTab(tab.dataset.tab); return; }
+    const tab = e.target.closest('[data-tab]'); if (tab) { e.preventDefault(); goTab(tab.dataset.tab); return; }
     const go = e.target.closest('[data-goto]'); if (go) { goTab(go.dataset.goto); return; }
     const app = e.target.closest('[data-app]'); if (app) { goTab(app.dataset.app); return; }
     const job = e.target.closest('[data-job]'); if (job) { state.selectedJob = state.selectedJob === job.dataset.job ? null : job.dataset.job; renderAll(); const d = $('#detail'); if (d) d.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
