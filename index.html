@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EBV VTOM en direct</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a console for the exploitation team. Sticky tab strip, one day on a 24 h ruler, job chains as boxed steps. */
+:root {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --surface-2: #e3e8ef;
+  --line: #c9d2dd;
+  --fg: #16212c;
+  --muted: #5f6f80;
+  --accent: #0e6b86;
+  --accent-ink: #ffffff;
+  --now: #c8302a;
+  --st-upcoming: #4d78a8;
+  --st-open: #1f8a56;
+  --st-passed: #7a8795;
+  --st-unknown: #b07d12;
+  --st-off: #a3adb8;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 4px;
+  --shadow: 0 1px 2px rgba(22, 33, 44, .08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151c; --surface: #171f28; --surface-2: #202a35; --line: #2f3b48;
+    --fg: #e4eaf0; --muted: #93a2b3; --accent: #45b4d2; --accent-ink: #06202a;
+    --now: #ff5f57; --st-upcoming: #7aa4d6; --st-open: #3fbf80; --st-passed: #8a97a6;
+    --st-unknown: #d9a63a; --st-off: #5b6775; --shadow: 0 1px 2px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151c; --surface: #171f28; --surface-2: #202a35; --line: #2f3b48;
+  --fg: #e4eaf0; --muted: #93a2b3; --accent: #45b4d2; --accent-ink: #06202a;
+  --now: #ff5f57; --st-upcoming: #7aa4d6; --st-open: #3fbf80; --st-passed: #8a97a6;
+  --st-unknown: #d9a63a; --st-off: #5b6775; --shadow: 0 1px 2px rgba(0,0,0,.4);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 14px/1.5 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: .01em; margin: 0; text-wrap: balance; }
+h1 { font-size: 1.35rem; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1rem; }
+p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.mono { font-family: var(--font-mono); }
+.num { font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; }
+.muted { color: var(--muted); }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* top bar */
+.topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px;
+  padding-block: 14px 10px; border-bottom: 1px solid var(--line);
+}
+.topbar .brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.topbar .brand small { color: var(--muted); font-size: .8rem; }
+.clock { margin-left: auto; display: flex; align-items: baseline; gap: 10px; }
+.clock .time { font-family: var(--font-mono); font-size: 1.9rem; font-weight: 500; line-height: 1; color: var(--now); }
+.clock .date { color: var(--muted); font-size: .85rem; }
+.clock.sim .time { color: var(--st-unknown); }
+.clock .sim-tag { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--st-unknown); font-weight: 600; }
+
+/* tabs */
+.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); display: flex; align-items: stretch; gap: 8px; }
+.tabstrip { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: thin; flex: 1 1 auto; min-width: 0; }
+.tab {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; background: none; border: 0;
+  border-bottom: 3px solid transparent; padding: 10px 12px 8px; color: var(--muted); white-space: nowrap;
+  font-family: var(--font-display); font-weight: 500; font-size: .95rem;
+}
+.tab:hover { color: var(--fg); }
+.tab.active { color: var(--fg); border-bottom-color: var(--accent); }
+.tab .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--st-off); flex: 0 0 auto; }
+.tab.first { font-weight: 600; padding-left: 4px; }
+.tabs select { flex: 0 0 auto; align-self: center; max-width: 220px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 5px 8px; }
+
+/* status colors */
+.st-upcoming { --st: var(--st-upcoming); }
+.st-open { --st: var(--st-open); }
+.st-passed { --st: var(--st-passed); }
+.st-unknown { --st: var(--st-unknown); }
+.st-off { --st: var(--st-off); }
+.dot.st-upcoming, .dot.st-open, .dot.st-passed, .dot.st-unknown, .dot.st-off { background: var(--st); }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px; font-size: .8rem; font-weight: 500; background: color-mix(in srgb, var(--st) 16%, var(--surface)); color: var(--st); white-space: nowrap; }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--st); }
+
+main { display: flex; flex-direction: column; gap: 20px; padding-top: 18px; }
+.view[hidden] { display: none; }
+.view { display: flex; flex-direction: column; gap: 20px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); }
+
+/* upload */
+.drop { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 22px; border: 2px dashed var(--line); border-radius: 6px; margin: 12px; }
+.drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.drop input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); font-weight: 500; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.small { padding: 4px 10px; font-size: .85rem; }
+.drop .hint { color: var(--muted); }
+.drop .err { color: var(--now); flex-basis: 100%; }
+.filebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding: 10px 14px; }
+.filebar .name { font-weight: 600; }
+.filebar .meta { color: var(--muted); font-size: .85rem; }
+.filebar .spacer { flex: 1 1 auto; }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 10px 14px; }
+.controls label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: .85rem; }
+.controls input[type=date], .controls input[type=time], .controls input[type=search] { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 5px 8px; color: var(--fg); }
+.controls input[type=search] { min-width: 200px; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stat { padding: 10px 14px; border-left: 4px solid var(--st, var(--line)); background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); }
+.stat .v { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 500; line-height: 1.1; }
+.stat .l { color: var(--muted); font-size: .8rem; }
+
+/* 24h timeline */
+.tl { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
+.tl-head, .tl-row { display: grid; grid-template-columns: minmax(110px, 210px) 1fr; gap: 10px; align-items: center; }
+.tl-axis { position: relative; height: 18px; font-family: var(--font-mono); font-size: .7rem; color: var(--muted); }
+.tl-axis span { position: absolute; top: 0; transform: translateX(-50%); }
+.tl-axis span:first-child { transform: none; }
+.tl-axis span:last-child { transform: translateX(-100%); }
+.tl-row { border-top: 1px solid color-mix(in srgb, var(--line) 50%, transparent); padding-block: 4px; cursor: pointer; }
+.tl-row:hover .tl-label { color: var(--accent); }
+.tl-label { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.tl-label b { font-family: var(--font-mono); font-weight: 500; font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-label small { color: var(--muted); font-size: .72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-track { position: relative; height: 22px; background: var(--surface-2); border-radius: 3px;
+  background-image: repeating-linear-gradient(90deg, var(--line) 0 1px, transparent 1px calc(100% / 8)); }
+.bar { position: absolute; top: 3px; bottom: 3px; border-radius: 3px; background: var(--st); min-width: 3px; opacity: .9; }
+.bar.cyc { background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgba(255,255,255,.35) 6px 9px); }
+.bar .lbl { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); font-family: var(--font-mono); font-size: .68rem; color: #fff; white-space: nowrap; text-shadow: 0 0 3px rgba(0,0,0,.55), 0 0 1px rgba(0,0,0,.8); }
+.bar.narrow .lbl { left: calc(100% + 6px); color: var(--muted); text-shadow: none; }
+.nowline { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--now); z-index: 2; }
+.jobmark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--fg); opacity: .6; }
+.tl-empty { padding: 20px 14px; color: var(--muted); }
+
+/* lists */
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.list { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.list h3 { display: flex; align-items: center; gap: 8px; }
+.list h3 .count { font-family: var(--font-mono); font-size: .85rem; color: var(--muted); font-weight: 400; }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 7px 8px; border-radius: var(--radius); border-left: 3px solid var(--st); background: color-mix(in srgb, var(--st) 7%, var(--surface)); cursor: pointer; }
+.item:hover { background: color-mix(in srgb, var(--st) 16%, var(--surface)); }
+.item .n { font-family: var(--font-mono); font-size: .82rem; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .t { font-family: var(--font-mono); font-size: .82rem; color: var(--st); font-weight: 500; }
+.item .s { grid-column: 1 / -1; font-size: .78rem; color: var(--muted); }
+.list .none { color: var(--muted); font-size: .85rem; }
+
+/* app view */
+.app-head { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 24px; padding: 14px 16px 10px; }
+.app-head .titles { min-width: 0; flex: 1 1 320px; display: flex; flex-direction: column; gap: 3px; }
+.app-head h2 { font-family: var(--font-mono); font-weight: 500; font-size: 1.1rem; word-break: break-all; }
+.app-head .lead { font-size: 1rem; }
+.app-head .side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.app-head .side .next { font-family: var(--font-mono); font-size: .85rem; color: var(--muted); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 20px; padding: 10px 16px 14px; margin: 0; border-top: 1px solid var(--line); }
+.facts div { min-width: 0; }
+.facts dt { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 500; }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.facts .mono { font-size: .85rem; }
+.facts .badge { display: inline-block; font-size: .72rem; padding: 1px 7px; border-radius: 999px; margin-left: 6px; background: color-mix(in srgb, var(--st) 18%, var(--surface)); color: var(--st); font-weight: 600; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--accent); font-family: var(--font-mono); font-size: .85rem; text-decoration: underline; text-underline-offset: 2px; }
+.band { padding: 10px 16px 12px; display: grid; grid-template-columns: 1fr; gap: 4px; }
+
+/* chain */
+.chain-wrap { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.chain-wrap header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; }
+.chain-wrap .warn { color: var(--st-unknown); font-size: .85rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .78rem; color: var(--muted); margin-left: auto; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--st); margin-right: 5px; vertical-align: -1px; }
+.chain { overflow-x: auto; overflow-y: hidden; padding: 8px 4px 12px; }
+.chain-inner { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 232px; column-gap: 64px; align-items: center; width: max-content; min-width: 100%; }
+.level { display: flex; flex-direction: column; gap: 18px; position: relative; z-index: 1; }
+.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: visible; }
+.links path { fill: none; stroke: var(--muted); stroke-width: 1.5; }
+.links path.hl { stroke: var(--accent); stroke-width: 2.5; }
+.job {
+  position: relative; display: flex; flex-direction: column; gap: 4px; padding: 9px 11px 8px 13px;
+  background: color-mix(in srgb, var(--st) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--st) 45%, var(--line));
+  border-left: 5px solid var(--st); border-radius: var(--radius); cursor: pointer; box-shadow: var(--shadow); min-width: 0;
+}
+.job:hover { border-color: var(--st); }
+.job.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.job-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.job-name { font-family: var(--font-mono); font-size: .84rem; font-weight: 500; word-break: break-all; line-height: 1.3; }
+.chip { flex: 0 0 auto; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; padding: 1px 6px; border-radius: 3px; background: var(--surface-2); color: var(--muted); font-weight: 600; }
+.job-comment { font-size: .8rem; color: var(--fg); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.job-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: .78rem; margin-top: 2px; }
+.job-time { font-family: var(--font-mono); color: var(--st); font-weight: 500; }
+.job-ext { font-size: .72rem; color: var(--muted); font-style: italic; }
+.job .seq { position: absolute; top: -9px; left: 8px; font-family: var(--font-mono); font-size: .66rem; color: var(--muted); background: var(--surface); padding: 0 4px; border-radius: 3px; }
+
+/* detail */
+.detail { padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+.detail .d-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.detail .d-head h3 { font-family: var(--font-mono); font-weight: 500; font-size: 1rem; }
+.detail .close { margin-left: auto; }
+.detail .cmd { font-family: var(--font-mono); font-size: .82rem; background: var(--surface-2); padding: 8px 10px; border-radius: var(--radius); overflow-x: auto; white-space: pre; }
+.detail .muted-note { font-size: .82rem; color: var(--muted); }
+
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+.empty b { color: var(--fg); font-family: var(--font-display); font-size: 1.1rem; }
+
+@media (max-width: 640px) {
+  .tl-head, .tl-row { grid-template-columns: 1fr; gap: 2px; }
+  .tl-head > div:first-child { display: none; }
+  .clock .time { font-size: 1.5rem; }
+  .app-head .side { align-items: flex-start; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tab, .job, .item { transition: background-color .15s, border-color .15s, color .15s; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <h1>EBV VTOM en direct</h1>
+    <small id="brandSub">Applications et étapes de la journée, lues depuis l'Expression de Besoin VTOM</small>
+  </div>
+  <div class="clock" id="clock">
+    <span class="sim-tag" id="simTag" hidden>Heure simulée</span>
+    <span class="time num" id="clockTime">--:--:--</span>
+    <span class="date" id="clockDate"></span>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Onglets">
+  <div class="tabstrip" id="tabstrip"></div>
+  <select id="tabSelect" aria-label="Aller à une application" hidden><option value="">Toutes les applications…</option></select>
+</nav>
+
+<main id="main">
+  <section class="view" id="view-jour">
+    <section class="panel" id="uploadPanel">
+      <div class="drop" id="drop">
+        <input type="file" id="file" accept=".xlsm,.xlsx,.xls">
+        <label for="file" class="btn primary">Choisir l'EBV (.xlsm)</label>
+        <span class="hint">ou glissez le fichier ici. Les onglets <span class="mono">APP</span> et <span class="mono">JOB</span> sont lus dans le navigateur, rien n'est envoyé.</span>
+        <span class="err" id="fileErr" hidden></span>
+      </div>
+      <div class="filebar" id="fileBar" hidden></div>
+    </section>
+
+    <section class="panel controls" id="controls" hidden>
+      <label>Date de référence <input type="date" id="simDate"></label>
+      <label>Heure simulée <input type="time" id="simTime" step="60"></label>
+      <button class="btn small" id="btnNow" type="button">Revenir à l'heure réelle</button>
+      <label><input type="checkbox" id="inclDel"> Inclure les lignes en suppression</label>
+      <label>Rechercher <input type="search" id="search" placeholder="application, commentaire, job…"></label>
+    </section>
+
+    <div id="dayBody">
+      <div class="panel empty">
+        <b>Aucun EBV chargé</b>
+        <span>Chargez le classeur pour voir les applications déjà lancées, en fenêtre de lancement et à venir, puis un onglet par application.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-app" hidden></section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const STORE = 'ebv-vtom-viewer-v1';
+
+  const state = {
+    raw: null, model: null, includeDeleted: false,
+    simTime: null, simDate: null, search: '', tab: 'jour', selectedJob: null, lastMinute: -1
+  };
+
+  /* ---------- helpers ---------- */
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const clean = s => String(s ?? '').replace(/\s+/g, ' ').trim();
+  const key = s => clean(s).toUpperCase();
+  const pad = n => String(n).padStart(2, '0');
+  const fmt = m => (m == null ? '—' : pad(Math.floor((((m % 1440) + 1440) % 1440) / 60)) + ':' + pad(((m % 1440) + 1440) % 60));
+  const shortName = n => clean(n).replace(/^[A-Z0-9]+_<XX>_/i, '');
+  const slug = n => shortName(n).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const isDeleted = a => norm(a).startsWith('suppr');
+  const daysInMonth = d => new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+
+  function toMinutes(v) {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') { if (!isFinite(v)) return null; const m = Math.round((v % 1) * 1440 + (v >= 1 && v % 1 === 0 ? 0 : 0)); return m >= 1440 ? 1439 : m; }
+    if (v instanceof Date) return v.getHours() * 60 + v.getMinutes();
+    const s = String(v).trim();
+    const m = s.match(/^(\d{1,2})\s*[:hH]\s*(\d{2})?/);
+    if (m) return Math.min(1439, (+m[1]) * 60 + (+(m[2] || 0)));
+    const f = parseFloat(s.replace(',', '.'));
+    if (!isNaN(f) && f >= 0 && f < 1) return Math.round(f * 1440);
+    return null;
+  }
+  function splitList(v) { return String(v ?? '').split(/[\n;,]+/).map(x => x.trim()).filter(Boolean); }
+  function appRef(s) { const p = s.split('/'); return clean(p[p.length - 1]); }
+  function parseCycle(v) {
+    const s = norm(v); if (!s) return null;
+    const m = s.match(/(\d+(?:[.,]\d+)?)\s*(h|heure|min|mn|m\b|s|sec)/);
+    if (!m) return null;
+    const n = parseFloat(m[1].replace(',', '.'));
+    if (m[2].startsWith('h')) return n * 60;
+    if (m[2].startsWith('s')) return Math.max(1, n / 60);
+    return n;
+  }
+  function storeSet(v) { try { localStorage.setItem(STORE, JSON.stringify(v)); } catch (e) { /* ignore */ } }
+  function storeGet() { try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) { return null; } }
+
+  /* ---------- workbook parsing ---------- */
+  const APP_COLS = {
+    uid: [/^uid/, 0], version: [/version applicative/, 1], action: [/^action$/, 2], envApp: [/environnement applicatif/, 3],
+    envVtom: [/environnement vtom/, 4], name: [/^application$/, 5], comment: [/^commentaire/, 6], fa: [/^fa$/, 7], pte: [/^pte$/, 8],
+    pred: [/^predecesseur/, 9], predLink: [/lien.*predecesseur/, 10], succ: [/^successeur/, 11], succLink: [/lien.*successeur/, 12],
+    dateName: [/nom\s*date/, 13], start: [/heure (de )?debut/, 14], max: [/heure (max|de fin)/, 15], mode: [/mode d.execution/, 16],
+    planif: [/^planification/, 17], cyclic: [/^cyclique/, 18], cycle: [/duree du cycle/, 19], fileFlag: [/fichier \(present/, 20],
+    fileRes: [/fichier \(nom/, 21], filePath: [/fichier \(chemin/, 22], incompat: [/traitements incompatibles/, 23],
+    goManName: [/ressource de go manuel/, 24], goManVal: [/valeur attendue de la ressource pour go/, 25],
+    goExtName: [/ressource de go externe/, 26], goExtVal: [/valeur attendue de la ressource\s*\(=\)/, 27], unschedule: [/deplanifier/, 28]
+  };
+  const JOB_COLS = {
+    uid: [/^uid/, 0], version: [/version applicative/, 1], action: [/^action$/, 2], env: [/^environnement$/, 3], app: [/^application$/, 4],
+    job: [/^job$/, 5], comment: [/^commentaire/, 6], fa: [/^fa$/, 7], pte: [/^pte$/, 8], pred: [/^predecesseur/, 9],
+    predLink: [/lien.*predecesseur/, 10], succ: [/^successeur/, 11], succLink: [/lien.*successeur/, 12],
+    start: [/heure (de )?debut/, 13], max: [/heure (max|de fin)/, 14], duration: [/duree max/, 15], mode: [/mode d.execution/, 16],
+    planif: [/^planification/, 17], cyclic: [/^cyclique/, 18], cycle: [/duree du cycle/, 19], fileFlag: [/fichier \(present/, 20],
+    fileRes: [/fichier \(nom/, 21], filePath: [/fichier \(chemin/, 22], group: [/^groupe$/, 23], incompat: [/traitements incompatibles/, 24],
+    goManName: [/ressource de go manuel/, 25], goManVal: [/valeur attendue de la ressource pour go/, 26],
+    goExtName: [/ressource de go externe/, 27], goExtVal: [/valeur attendue de la ressource\s*\(=\)/, 28], defaults: [/valeurs par defaut/, 29],
+    user: [/^user$/, 30], machine: [/^machine$/, 31], type: [/type de traitement/, 32], script: [/^script/, 33]
+  };
+
+  function findSheet(wb, name) {
+    const n = norm(name);
+    return wb.SheetNames.find(s => norm(s) === n) || wb.SheetNames.find(s => norm(s).startsWith(n));
+  }
+  function sheetMatrix(wb, name) {
+    const sn = findSheet(wb, name);
+    if (!sn) return null;
+    const ws = wb.Sheets[sn]; if (!ws || !ws['!ref']) return null;
+    const range = XLSX.utils.decode_range(ws['!ref']); range.s.c = 0; range.s.r = 0; /* indices absolus, même si la feuille commence en B2 */
+    return XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: true, range });
+  }
+  function findHeaderRow(rows, must) {
+    for (let i = 0; i < Math.min(rows.length, 8); i++) {
+      const hdr = (rows[i] || []).map(norm);
+      if (must.every(re => hdr.some(h => re.test(h)))) return i;
+    }
+    return 1;
+  }
+  function resolveCols(headerRow, spec) {
+    const hdr = headerRow.map(norm); const cols = {};
+    for (const [k, [re, fb]] of Object.entries(spec)) { const i = hdr.findIndex(h => h && re.test(h)); cols[k] = i >= 0 ? i : fb; }
+    return cols;
+  }
+  const cell = (row, i) => (i == null || i < 0 ? null : row[i]);
+  const str = v => (v == null ? '' : String(v).trim());
+
+  function parseWorkbook(wb, fileName) {
+    const appM = sheetMatrix(wb, 'APP'), jobM = sheetMatrix(wb, 'JOB');
+    if (!appM && !jobM) throw new Error("Aucun onglet APP ni JOB dans ce classeur. Est-ce bien un EBV VTOM ?");
+    const out = { fileName, loadedAt: Date.now(), histo: {}, apps: [], jobs: [] };
+    const histo = sheetMatrix(wb, 'Histo');
+    if (histo) for (const r of histo) {
+      const l = norm(r && r[1]); if (!l) continue;
+      if (l.startsWith('titre')) out.histo.title = str(r[2]);
+      else if (l.startsWith('projet')) out.histo.project = str(r[2]);
+      else if (l.startsWith('proprietaire')) out.histo.owner = str(r[2]);
+    }
+    if (appM) {
+      const h = findHeaderRow(appM, [/^application$/, /^action$/]); const c = resolveCols(appM[h] || [], APP_COLS);
+      for (let i = h + 1; i < appM.length; i++) {
+        const r = appM[i] || []; const name = clean(cell(r, c.name)); if (!name) continue;
+        out.apps.push({
+          row: i + 1, name, action: str(cell(r, c.action)), version: str(cell(r, c.version)), envApp: str(cell(r, c.envApp)),
+          envVtom: str(cell(r, c.envVtom)), comment: clean(cell(r, c.comment)), pte: str(cell(r, c.pte)),
+          pred: splitList(cell(r, c.pred)).map(appRef), predLink: str(cell(r, c.predLink)), succ: splitList(cell(r, c.succ)).map(appRef), succLink: str(cell(r, c.succLink)),
+          dateName: str(cell(r, c.dateName)), start: toMinutes(cell(r, c.start)), max: toMinutes(cell(r, c.max)), mode: str(cell(r, c.mode)),
+          planif: clean(cell(r, c.planif)), cyclic: /^o/i.test(str(cell(r, c.cyclic))), cycle: str(cell(r, c.cycle)),
+          fileFlag: str(cell(r, c.fileFlag)), fileRes: str(cell(r, c.fileRes)), filePath: str(cell(r, c.filePath)), incompat: str(cell(r, c.incompat)),
+          goManName: str(cell(r, c.goManName)), goManVal: str(cell(r, c.goManVal)), goExtName: str(cell(r, c.goExtName)), goExtVal: str(cell(r, c.goExtVal)),
+          unschedule: str(cell(r, c.unschedule))
+        });
+      }
+    }
+    if (jobM) {
+      const h = findHeaderRow(jobM, [/^application$/, /^job$/]); const hdr = (jobM[h] || []).map(norm); const c = resolveCols(jobM[h] || [], JOB_COLS);
+      let params = hdr.map((x, i) => (/^param\s*\d/.test(x) ? i : -1)).filter(i => i >= 0);
+      if (!params.length) params = [34, 35, 36, 37, 38, 39];
+      for (let i = h + 1; i < jobM.length; i++) {
+        const r = jobM[i] || []; const app = clean(cell(r, c.app)); const name = clean(cell(r, c.job)); if (!app && !name) continue;
+        out.jobs.push({
+          row: i + 1, app, name, action: str(cell(r, c.action)), version: str(cell(r, c.version)), env: str(cell(r, c.env)),
+          comment: clean(cell(r, c.comment)), pte: str(cell(r, c.pte)), pred: splitList(cell(r, c.pred)), predLink: str(cell(r, c.predLink)),
+          succ: splitList(cell(r, c.succ)), succLink: str(cell(r, c.succLink)), start: toMinutes(cell(r, c.start)), max: toMinutes(cell(r, c.max)),
+          duration: str(cell(r, c.duration)), mode: str(cell(r, c.mode)), planif: clean(cell(r, c.planif)), cyclic: /^o/i.test(str(cell(r, c.cyclic))),
+          cycle: str(cell(r, c.cycle)), fileFlag: str(cell(r, c.fileFlag)), fileRes: str(cell(r, c.fileRes)), filePath: str(cell(r, c.filePath)),
+          group: str(cell(r, c.group)), incompat: str(cell(r, c.incompat)), goManName: str(cell(r, c.goManName)), goManVal: str(cell(r, c.goManVal)),
+          goExtName: str(cell(r, c.goExtName)), goExtVal: str(cell(r, c.goExtVal)), user: str(cell(r, c.user)), machine: str(cell(r, c.machine)),
+          type: str(cell(r, c.type)), script: str(cell(r, c.script)), params: params.map(p => str(cell(r, p))).filter(Boolean)
+        });
+      }
+    }
+    return out;
+  }
+
+  /* ---------- model ---------- */
+  function buildModel(raw, includeDeleted) {
+    const apps = new Map(); const excluded = { apps: 0, jobs: 0 }; const warnings = [];
+    const newApp = (name, fromJobs) => ({
+      name, key: key(name), short: shortName(name), slug: slug(name), fromJobs: !!fromJobs, comment: '', action: '', version: '', envApp: '', envVtom: '',
+      pred: [], succ: [], start: null, max: null, planif: '', cyclic: false, cycle: '', cycleMin: null, goExtName: '', goExtVal: '', goManName: '', goManVal: '',
+      mode: '', fileFlag: '', filePath: '', incompat: '', unschedule: '', jobs: [], rows: []
+    });
+    for (const r of raw.apps) {
+      if (!includeDeleted && isDeleted(r.action)) { excluded.apps++; continue; }
+      const k = key(r.name); let a = apps.get(k);
+      if (!a) { a = newApp(r.name); apps.set(k, a); } else warnings.push(`Application ${r.name} présente plusieurs fois dans APP (lignes ${a.rows.join(', ')} et ${r.row}) : la dernière ligne complète les précédentes.`);
+      a.rows.push(r.row);
+      for (const f of ['comment', 'action', 'version', 'envApp', 'envVtom', 'planif', 'cycle', 'goExtName', 'goExtVal', 'goManName', 'goManVal', 'mode', 'fileFlag', 'filePath', 'incompat', 'unschedule']) if (r[f]) a[f] = r[f];
+      if (r.start != null) a.start = r.start; if (r.max != null) a.max = r.max;
+      if (r.cyclic) a.cyclic = true; if (r.pred.length) a.pred = r.pred; if (r.succ.length) a.succ = r.succ;
+      a.deleted = isDeleted(r.action);
+    }
+    const seen = new Map();
+    for (const r of raw.jobs) {
+      if (!r.name) continue;
+      if (!includeDeleted && isDeleted(r.action)) { excluded.jobs++; continue; }
+      const ak = key(r.app || '(sans application)'); let a = apps.get(ak);
+      if (!a) { a = newApp(r.app || '(sans application)', true); apps.set(ak, a); }
+      const jk = ak + '|' + key(r.name);
+      if (seen.has(jk)) { warnings.push(`Job ${r.name} en double dans ${a.name} (lignes ${seen.get(jk)} et ${r.row}) : la dernière ligne est retenue.`); a.jobs = a.jobs.filter(j => j.key !== key(r.name)); }
+      seen.set(jk, r.row);
+      a.jobs.push(Object.assign({}, r, { key: key(r.name), appKey: ak, deleted: isDeleted(r.action), externalPred: [], externalSucc: [], predKeys: [], level: 0 }));
+    }
+    for (const a of apps.values()) {
+      a.cycleMin = a.cyclic ? parseCycle(a.cycle) : null;
+      a.chainCyclic = computeLevels(a.jobs);
+      a.levels = Math.max(0, ...a.jobs.map(j => j.level + 1));
+      if (a.chainCyclic) warnings.push(`${a.name} : dépendances circulaires entre jobs, ordre de la feuille utilisé en partie.`);
+    }
+    const list = [...apps.values()];
+    return { apps: list, byKey: apps, bySlug: new Map(list.map(a => [a.slug, a])), excluded, warnings, histo: raw.histo, fileName: raw.fileName, loadedAt: raw.loadedAt };
+  }
+
+  function computeLevels(jobs) {
+    const byKey = new Map(jobs.map(j => [j.key, j]));
+    const preds = new Map(jobs.map(j => [j.key, new Set()]));
+    for (const j of jobs) {
+      for (const p of j.pred) { const pk = key(p); if (byKey.has(pk) && pk !== j.key) preds.get(j.key).add(pk); else if (pk !== j.key) j.externalPred.push(p); }
+      for (const s of j.succ) { const sk = key(s); if (byKey.has(sk) && sk !== j.key) preds.get(sk).add(j.key); else if (sk !== j.key) j.externalSucc.push(s); }
+    }
+    const indeg = new Map(), succs = new Map(), level = new Map();
+    for (const [k, ps] of preds) { indeg.set(k, ps.size); for (const p of ps) { if (!succs.has(p)) succs.set(p, []); succs.get(p).push(k); } }
+    const queue = jobs.map(j => j.key).filter(k => indeg.get(k) === 0); queue.forEach(k => level.set(k, 0));
+    while (queue.length) {
+      const k = queue.shift();
+      for (const s of succs.get(k) || []) { level.set(s, Math.max(level.get(s) ?? 0, level.get(k) + 1)); indeg.set(s, indeg.get(s) - 1); if (indeg.get(s) === 0) queue.push(s); }
+    }
+    let cyclic = false; let maxL = Math.max(-1, ...level.values());
+    for (const j of jobs) if (!level.has(j.key)) { cyclic = true; level.set(j.key, ++maxL); }
+    for (const j of jobs) { j.level = level.get(j.key); j.predKeys = [...preds.get(j.key)]; }
+    return cyclic;
+  }
+
+  /* ---------- planning ---------- */
+  const DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  const MONTHS = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin', 'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
+  const ORD = { premier: 1, premiere: 1, '1er': 1, '1ere': 1, '1re': 1, deuxieme: 2, '2e': 2, '2eme': 2, '2nd': 2, second: 2, seconde: 2, troisieme: 3, '3e': 3, '3eme': 3, quatrieme: 4, '4e': 4, '4eme': 4, dernier: -1, derniere: -1 };
+  const ORD_RE = '(premiere?|1ere?|1re|deuxieme|2e|2eme|2nd|seconde?|troisieme|3e|3eme|quatrieme|4e|4eme|derniere?)';
+  const DAY_RE = '(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|manche)';
+
+  function evalPlan(text, date) {
+    const raw = clean(text);
+    if (!raw) return { today: null, label: 'Planification non renseignée' };
+    const t = norm(raw).replace(/[()]/g, '').replace(/aujourd.?hui\s*=\s*/, '');
+    const dow = date.getDay(), dom = date.getDate(), dim = daysInMonth(date);
+    let monthsOk = true;
+    const mr = t.match(/d[e']\s*([a-z]+)\s+a\s+([a-z]+)/);
+    if (mr) { const a = MONTHS.indexOf(mr[1]), b = MONTHS.indexOf(mr[2]); if (a >= 0 && b >= 0) { const m = date.getMonth(); monthsOk = a <= b ? (m >= a && m <= b) : (m >= a || m <= b); } }
+    let m;
+    if (/tous les jours|chaque jour|quotidien/.test(t)) return { today: monthsOk, label: raw };
+    if ((m = t.match(new RegExp('(?:tous les|chaque) ' + DAY_RE)))) return { today: monthsOk && DAYS[dow] === m[1], label: raw };
+    if ((m = t.match(new RegExp(ORD_RE + '\\s+' + DAY_RE)))) {
+      const n = ORD[m[1]]; const d = m[2] === 'manche' ? 'dimanche' : m[2];
+      if (DAYS[dow] !== d) return { today: false, label: raw };
+      const ok = n === -1 ? dom + 7 > dim : Math.ceil(dom / 7) === n;
+      return { today: monthsOk && ok, label: raw };
+    }
+    if ((m = t.match(new RegExp(ORD_RE + '\\s+semaine')))) {
+      const n = ORD[m[1]];
+      const ok = n === -1 ? dom > dim - 7 : (dom > (n - 1) * 7 && dom <= n * 7);
+      return { today: monthsOk && ok, label: raw };
+    }
+    return { today: null, label: raw };
+  }
+
+  /* ---------- status ---------- */
+  function windowOf(a) {
+    if (a.start == null) return null;
+    let s = a.start, m = a.max == null ? a.start : a.max;
+    if (m === 0 && s > 0) m = 1439;
+    return { s, m, wraps: m < s };
+  }
+  function appStatus(a, now, plan) {
+    if (plan && plan.today === false) return { code: 'off', label: 'Pas prévue aujourd’hui', sub: plan.label };
+    const w = windowOf(a);
+    if (!w) return { code: 'unknown', label: 'Heure de lancement non renseignée', sub: a.fromJobs ? 'Aucune ligne dans l’onglet APP' : '' };
+    const inWin = w.wraps ? (now >= w.s || now <= w.m) : (now >= w.s && now <= w.m);
+    if (inWin) {
+      if (a.cyclic && a.cycleMin) {
+        const elapsed = ((now - w.s) % 1440 + 1440) % 1440;
+        const k = Math.floor(elapsed / a.cycleMin) + 1;
+        const next = w.s + k * a.cycleMin;
+        const last = w.wraps ? w.m + 1440 : w.m;
+        const nextOk = next <= last;
+        return { code: 'open', label: 'Cycle en cours', sub: nextOk ? `prochaine occurrence ${fmt(next)}` : `dernière occurrence passée, fin ${fmt(w.m)}`, next: nextOk ? next % 1440 : null };
+      }
+      return { code: 'open', label: 'En fenêtre de lancement', sub: `depuis ${fmt(w.s)}, jusqu’à ${fmt(w.m)}` };
+    }
+    if (w.wraps || now < w.s) {
+      const inMin = ((w.s - now) % 1440 + 1440) % 1440;
+      return { code: 'upcoming', label: `Lancement à ${fmt(w.s)}`, sub: `dans ${Math.floor(inMin / 60)} h ${pad(inMin % 60)} min`, next: w.s };
+    }
+    return { code: 'passed', label: 'Lancée', sub: `fenêtre ${fmt(w.s)} → ${fmt(w.m)} fermée` };
+  }
+  function jobTime(a, j) {
+    if (j.start != null) return { t: j.start, own: true };
+    return { t: a.start, own: false };
+  }
+  function jobStatus(a, j, now, appSt) {
+    if (appSt.code === 'off' || appSt.code === 'unknown') return appSt.code;
+    if (j.start != null) {
+      const w = windowOf(a); const end = w ? (w.wraps ? w.m + 1440 : w.m) : 1439;
+      if (now < j.start) return 'upcoming';
+      return now <= end ? 'open' : 'passed';
+    }
+    return appSt.code;
+  }
+
+  /* ---------- time ---------- */
+  function refDate() {
+    if (state.simDate) { const [y, mo, d] = state.simDate.split('-').map(Number); return new Date(y, mo - 1, d); }
+    return new Date();
+  }
+  function nowMinutes() { if (state.simTime != null) return state.simTime; const d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+  function isSim() { return state.simTime != null || !!state.simDate; }
+
+  function tickClock() {
+    const d = new Date();
+    const t = state.simTime != null ? fmt(state.simTime) + ':00' : pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    $('#clockTime').textContent = t;
+    const rd = refDate();
+    $('#clockDate').textContent = rd.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    $('#clock').classList.toggle('sim', isSim()); $('#simTag').hidden = !isSim();
+    const minute = nowMinutes() + (state.simDate || '');
+    if (minute !== state.lastMinute) { state.lastMinute = minute; if (state.model) renderAll(); }
+  }
+
+  /* ---------- derived view data ---------- */
+  function computed() {
+    const now = nowMinutes(), date = refDate();
+    const rows = state.model.apps.map(a => {
+      const plan = evalPlan(a.planif, date); const st = appStatus(a, now, plan);
+      return { a, plan, st };
+    });
+    const order = { open: 0, upcoming: 1, passed: 2, unknown: 3, off: 4 };
+    rows.sort((x, y) => (x.a.start ?? 9999) - (y.a.start ?? 9999) || x.a.short.localeCompare(y.a.short));
+    const q = norm(state.search);
+    const match = r => !q || norm(r.a.name + ' ' + r.a.comment + ' ' + r.a.jobs.map(j => j.name + ' ' + j.comment).join(' ')).includes(q);
+    return { now, date, rows, order, visible: rows.filter(match) };
+  }
+
+  /* ---------- rendering ---------- */
+  function renderAll() {
+    if (!state.model) return;
+    const c = computed();
+    renderTabs(c); renderDay(c);
+    if (state.tab !== 'jour') renderApp(c);
+  }
+
+  function renderTabs(c) {
+    const strip = $('#tabstrip'); const sel = $('#tabSelect');
+    const tabRows = [...c.rows].sort((x, y) => (c.order[x.st.code] === 4) - (c.order[y.st.code] === 4) || (x.a.start ?? 9999) - (y.a.start ?? 9999) || x.a.short.localeCompare(y.a.short));
+    let html = `<button class="tab first ${state.tab === 'jour' ? 'active' : ''}" data-tab="jour" type="button">Vue du jour</button>`;
+    for (const r of tabRows) html += `<button class="tab ${state.tab === r.a.key ? 'active' : ''}" data-tab="${esc(r.a.key)}" type="button" title="${esc(r.a.name)} · ${esc(r.st.label)}"><span class="dot st-${r.st.code}"></span>${esc(r.a.short)}</button>`;
+    strip.innerHTML = html;
+    sel.hidden = false;
+    sel.innerHTML = '<option value="">Toutes les applications…</option>' + tabRows.map(r => `<option value="${esc(r.a.key)}" ${state.tab === r.a.key ? 'selected' : ''}>${esc(r.a.short)} · ${fmt(r.a.start)}</option>`).join('');
+    const act = strip.querySelector('.tab.active'); if (act) act.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+
+  function barHtml(a, st, now, withLabel) {
+    const w = windowOf(a); if (!w) return `<span class="nowline" style="left:${now / 1440 * 100}%"></span>`;
+    const segs = w.wraps ? [[w.s, 1440], [0, w.m + 1]] : [[w.s, w.m + 1]];
+    const cyc = a.cyclic ? ' cyc' : '';
+    let h = segs.map(([x, y], i) => {
+      const narrow = (y - x) < 70;
+      return `<span class="bar st-${st.code}${cyc}${narrow ? ' narrow' : ''}" style="left:${x / 1440 * 100}%;width:${(y - x) / 1440 * 100}%">${withLabel && i === 0 ? `<span class="lbl">${fmt(w.s)}${w.m !== w.s ? ' → ' + fmt(w.m) : ''}${a.cyclic ? ' · ' + (a.cycle || 'cyclique') : ''}</span>` : ''}</span>`;
+    }).join('');
+    for (const j of a.jobs) if (j.start != null) h += `<span class="jobmark" style="left:${j.start / 1440 * 100}%" title="${esc(j.name)} à ${fmt(j.start)}"></span>`;
+    h += `<span class="nowline" style="left:${now / 1440 * 100}%"></span>`;
+    return h;
+  }
+  const axisHtml = () => `<div class="tl-axis">${[0, 3, 6, 9, 12, 15, 18, 21, 24].map(h => `<span style="left:${h / 24 * 100}%">${pad(h)}h</span>`).join('')}</div>`;
+
+  function renderDay(c) {
+    const m = state.model;
+    const title = m.histo.title ? `${m.histo.title}${m.histo.project ? ' · ' + m.histo.project : ''}` : m.fileName;
+    $('#brandSub').textContent = title;
+    $('#fileBar').hidden = false; $('#drop').hidden = true; $('#controls').hidden = false;
+    const kept = m.apps.length, jobs = m.apps.reduce((n, a) => n + a.jobs.length, 0);
+    $('#fileBar').innerHTML = `<span class="name">${esc(m.fileName)}</span><span class="meta">${kept} applications · ${jobs} jobs${m.excluded.apps + m.excluded.jobs ? ` · ${m.excluded.apps} applications et ${m.excluded.jobs} jobs en suppression ignorés` : ''} · chargé à ${new Date(m.loadedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span><span class="spacer"></span><button class="btn small" id="btnChange" type="button">Changer de fichier</button>`;
+    $('#btnChange').onclick = () => { $('#drop').hidden = false; $('#file').click(); };
+
+    const today = c.visible.filter(r => r.st.code !== 'off');
+    const by = code => c.visible.filter(r => r.st.code === code);
+    const stats = [
+      ['Prévues aujourd’hui', today.filter(r => r.st.code !== 'unknown').length, 'upcoming'],
+      ['Déjà lancées', by('passed').length, 'passed'],
+      ['En fenêtre maintenant', by('open').length, 'open'],
+      ['À venir', by('upcoming').length, 'upcoming'],
+      ['À confirmer', by('unknown').length + c.visible.filter(r => r.plan.today == null && r.st.code !== 'unknown').length, 'unknown'],
+      ['Pas prévues aujourd’hui', by('off').length, 'off']
+    ];
+    let html = `<div class="stats">${stats.map(([l, v, s]) => `<div class="stat st-${s}"><div class="v num">${v}</div><div class="l">${l}</div></div>`).join('')}</div>`;
+
+    html += `<section class="panel tl"><div class="tl-head"><div class="eyebrow">Frise de la journée · heure courante ${fmt(c.now)}</div>${axisHtml()}</div>`;
+    const tlRows = today.sort((x, y) => (x.a.start ?? 9999) - (y.a.start ?? 9999));
+    if (!tlRows.length) html += `<div class="tl-empty">Aucune application prévue pour cette date${state.search ? ' avec ce filtre' : ''}.</div>`;
+    for (const r of tlRows) {
+      html += `<div class="tl-row" data-app="${esc(r.a.key)}" role="button" tabindex="0"><div class="tl-label"><b title="${esc(r.a.name)}">${esc(r.a.short)}</b><small>${esc(r.a.comment || (r.a.jobs.length + ' jobs'))}${r.plan.today == null ? ' · planification à confirmer' : ''}</small></div><div class="tl-track">${barHtml(r.a, r.st, c.now, true)}</div></div>`;
+    }
+    html += `</section>`;
+
+    const listHtml = (titleTxt, code, rows, sortFn) => {
+      rows = [...rows].sort(sortFn);
+      return `<section class="panel list st-${code}"><h3>${titleTxt} <span class="count">${rows.length}</span></h3>${rows.length ? rows.map(r => `<div class="item st-${r.st.code}" data-app="${esc(r.a.key)}" role="button" tabindex="0"><span class="n" title="${esc(r.a.name)}">${esc(r.a.short)}</span><span class="t">${r.st.next != null ? fmt(r.st.next) : fmt(r.a.start)}</span><span class="s">${esc(r.st.label)}${r.st.sub ? ' · ' + esc(r.st.sub) : ''}${r.a.jobs.length ? ` · ${r.a.jobs.length} étape${r.a.jobs.length > 1 ? 's' : ''}` : ''}</span></div>`).join('') : '<div class="none">Aucune</div>'}</section>`;
+    };
+    const byStart = (x, y) => (x.a.start ?? 9999) - (y.a.start ?? 9999);
+    html += `<div class="cols">${listHtml('Déjà lancées', 'passed', by('passed'), (x, y) => (y.a.max ?? 0) - (x.a.max ?? 0))}${listHtml('En fenêtre maintenant', 'open', by('open'), byStart)}${listHtml('À venir', 'upcoming', by('upcoming'), (x, y) => (x.st.next ?? 9999) - (y.st.next ?? 9999))}</div>`;
+    const rest = c.visible.filter(r => r.st.code === 'off' || r.st.code === 'unknown' || r.plan.today == null);
+    if (rest.length) html += `<div class="cols">${listHtml('Pas prévues aujourd’hui', 'off', rest.filter(r => r.st.code === 'off'), byStart)}${listHtml('À confirmer (planification ou heure non interprétée)', 'unknown', rest.filter(r => r.st.code !== 'off'), byStart)}</div>`;
+    if (m.warnings.length) html += `<section class="panel list st-unknown"><h3>Avertissements de lecture <span class="count">${m.warnings.length}</span></h3>${m.warnings.map(w => `<div class="none">${esc(w)}</div>`).join('')}</section>`;
+    $('#dayBody').innerHTML = html;
+  }
+
+  function renderApp(c) {
+    const view = $('#view-app'); const r = c.rows.find(x => x.a.key === state.tab);
+    if (!r) { view.innerHTML = '<div class="panel empty"><b>Application introuvable</b></div>'; return; }
+    const a = r.a, st = r.st, plan = r.plan;
+    const appLink = n => { const t = state.model.byKey.get(key(n)); return t ? `<button class="linkbtn" data-goto="${esc(t.key)}" type="button">${esc(t.short)}</button>` : `<span class="mono">${esc(n)}</span>`; };
+    const todayBadge = plan.today === true ? `<span class="badge st-open">aujourd’hui</span>` : plan.today === false ? `<span class="badge st-off">pas aujourd’hui</span>` : `<span class="badge st-unknown">à confirmer</span>`;
+    let html = `<section class="panel">
+      <header class="app-head">
+        <div class="titles"><span class="eyebrow">Application VTOM${a.envVtom ? ' · ' + esc(a.envVtom) : ''}${a.action ? ' · ' + esc(a.action) + (a.version ? ' ' + esc(a.version) : '') : ''}</span><h2>${esc(a.name)}</h2>${a.comment ? `<p class="lead">${esc(a.comment)}</p>` : ''}</div>
+        <div class="side st-${st.code}"><span class="pill">${esc(st.label)}</span>${st.sub ? `<span class="next">${esc(st.sub)}</span>` : ''}</div>
+      </header>
+      <dl class="facts">
+        <div><dt>Plage de lancement</dt><dd class="mono num">${fmt(a.start)} → ${fmt(a.max)}</dd></div>
+        <div><dt>Planification</dt><dd>${esc(plan.label)}${todayBadge}</dd></div>
+        <div><dt>Cyclicité</dt><dd>${a.cyclic ? 'Cyclique, ' + esc(a.cycle || 'période non renseignée') : 'Non cyclique'}${a.mode ? ' · ' + esc(a.mode) : ''}</dd></div>
+        <div><dt>Étapes</dt><dd>${a.jobs.length} job${a.jobs.length > 1 ? 's' : ''} sur ${a.levels} niveau${a.levels > 1 ? 'x' : ''}</dd></div>
+        ${a.pred.length ? `<div><dt>Après (prédécesseurs)</dt><dd>${a.pred.map(appLink).join(', ')}${a.predLink ? ` <span class="muted">(lien ${esc(a.predLink)})</span>` : ''}</dd></div>` : ''}
+        ${a.succ.length ? `<div><dt>Avant (successeurs)</dt><dd>${a.succ.map(appLink).join(', ')}${a.succLink ? ` <span class="muted">(lien ${esc(a.succLink)})</span>` : ''}</dd></div>` : ''}
+        ${a.goExtName ? `<div><dt>GO externe</dt><dd class="mono">${esc(a.goExtName)} = ${esc(a.goExtVal)}</dd></div>` : ''}
+        ${a.goManName ? `<div><dt>GO manuel</dt><dd class="mono">${esc(a.goManName)} = ${esc(a.goManVal)}</dd></div>` : ''}
+        ${a.envApp ? `<div><dt>Environnements</dt><dd class="mono">${esc(a.envApp)}</dd></div>` : ''}
+        ${a.filePath ? `<div><dt>Contrainte fichier</dt><dd class="mono">${esc(a.fileFlag)} ${esc(a.filePath)}</dd></div>` : ''}
+        ${a.unschedule ? `<div><dt>Déplanifier les successeurs</dt><dd>${esc(a.unschedule)}</dd></div>` : ''}
+      </dl>
+      <div class="band">${axisHtml()}<div class="tl-track">${barHtml(a, st, c.now, true)}</div></div>
+    </section>`;
+
+    const levels = []; for (const j of a.jobs) (levels[j.level] = levels[j.level] || []).push(j);
+    html += `<section class="panel chain-wrap"><header><h3>Chaîne des étapes</h3>${a.chainCyclic ? '<span class="warn">Dépendances circulaires détectées, ordre partiel</span>' : ''}<div class="legend"><span class="st-passed">lancée</span><span class="st-open">en fenêtre</span><span class="st-upcoming">à venir</span><span class="st-off">pas aujourd’hui</span></div></header>`;
+    if (!a.jobs.length) html += `<p class="muted">Aucun job dans l’onglet JOB pour cette application.</p>`;
+    else {
+      let seq = 0;
+      html += `<div class="chain" id="chain"><div class="chain-inner"><svg class="links" id="links"></svg>`;
+      levels.forEach((lv, li) => {
+        html += `<div class="level">`;
+        for (const j of lv) {
+          seq++;
+          const jt = jobTime(a, j); const code = jobStatus(a, j, c.now, st);
+          const timeTxt = jt.t == null ? 'heure non renseignée' : (jt.own ? `lancement ${fmt(jt.t)}` : (a.cyclic ? `dès ${fmt(jt.t)}, ${a.cycle || 'cyclique'}` : (li === 0 ? `lancement ${fmt(jt.t)}` : `après ${j.predKeys.length > 1 ? 'les précédents' : 'le précédent'} · dès ${fmt(jt.t)}`)));
+          const ext = j.externalPred.length ? `<span class="job-ext">après ${esc(j.externalPred.join(', '))}</span>` : '';
+          html += `<article class="job st-${code} ${state.selectedJob === j.key ? 'sel' : ''}" data-job="${esc(j.key)}" tabindex="0" role="button"><span class="seq">${seq}</span><div class="job-top"><span class="job-name">${esc(j.name)}</span>${j.type ? `<span class="chip">${esc(j.type)}</span>` : ''}</div>${j.comment ? `<p class="job-comment">${esc(j.comment)}</p>` : ''}<div class="job-foot"><span class="job-time">${timeTxt}</span>${j.planif ? `<span class="job-ext">${esc(j.planif)}</span>` : ext}</div></article>`;
+        }
+        html += `</div>`;
+      });
+      html += `</div></div>`;
+    }
+    html += `</section>`;
+    const sj = a.jobs.find(j => j.key === state.selectedJob);
+    if (sj) html += detailHtml(a, sj, c, st);
+    view.innerHTML = html;
+    drawLinks(a);
+  }
+
+  function detailHtml(a, j, c, st) {
+    const jt = jobTime(a, j); const code = jobStatus(a, j, c.now, st);
+    const cmd = [j.script, ...j.params].filter(Boolean).join(' ');
+    const row = (l, v, mono) => (v ? `<div><dt>${l}</dt><dd class="${mono ? 'mono' : ''}">${v}</dd></div>` : '');
+    return `<section class="panel detail st-${code}" id="detail">
+      <div class="d-head"><h3>${esc(j.name)}</h3><span class="pill">${code === 'passed' ? 'lancée' : code === 'open' ? 'en fenêtre' : code === 'upcoming' ? 'à venir' : code === 'off' ? 'pas aujourd’hui' : 'à confirmer'}</span><span class="muted">${esc(j.comment)}</span><button class="btn small close" id="btnCloseDetail" type="button">Fermer</button></div>
+      <dl class="facts" style="border-top:0;padding:0">
+        ${row('Heure de lancement', jt.t == null ? 'non renseignée' : fmt(jt.t) + (jt.own ? ' (propre au job)' : ' (héritée de l’application)'), true)}
+        ${row('Type de traitement', esc(j.type))}
+        ${row('Prédécesseurs', esc(j.pred.join(', ')) + (j.predLink ? ` <span class="muted">(lien ${esc(j.predLink)})</span>` : ''), true)}
+        ${row('Successeurs', esc(j.succ.join(', ')) + (j.succLink ? ` <span class="muted">(lien ${esc(j.succLink)})</span>` : ''), true)}
+        ${row('Utilisateur / machine', esc([j.user, j.machine].filter(Boolean).join(' @ ')), true)}
+        ${row('EBV', esc([j.action, j.version].filter(Boolean).join(' ')) + (j.row ? ` <span class="muted">(ligne ${j.row})</span>` : ''))}
+        ${row('Planification propre', esc(j.planif))}
+        ${row('Plage propre', j.start != null || j.max != null ? fmt(j.start) + ' → ' + fmt(j.max) : '', true)}
+        ${row('Durée max', esc(j.duration), true)}
+        ${row('Groupe de parallélisation', esc(j.group), true)}
+        ${row('Traitements incompatibles', esc(j.incompat), true)}
+        ${row('GO manuel', j.goManName ? esc(j.goManName + ' = ' + j.goManVal) : '', true)}
+        ${row('GO externe', j.goExtName ? esc(j.goExtName + ' = ' + j.goExtVal) : '', true)}
+        ${row('Contrainte fichier', j.filePath ? esc([j.fileFlag, j.fileRes, j.filePath].filter(Boolean).join(' ')) : '', true)}
+        ${row('PTE', esc(j.pte), true)}
+      </dl>
+      ${cmd ? `<div class="cmd">${esc(cmd)}</div>` : ''}
+      ${j.params.length ? `<p class="muted-note">Script puis paramètres 1 à ${j.params.length} tels que saisis dans l’EBV.</p>` : ''}
+    </section>`;
+  }
+
+  function drawLinks(a) {
+    const svg = $('#links'); const inner = svg && svg.parentElement; if (!svg || !inner) return;
+    const boxes = new Map(); inner.querySelectorAll('.job').forEach(el => boxes.set(el.dataset.job, el));
+    const W = inner.scrollWidth, H = inner.scrollHeight;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', W); svg.setAttribute('height', H);
+    const ir = inner.getBoundingClientRect();
+    const rect = el => { const r = el.getBoundingClientRect(); return { l: r.left - ir.left, r: r.right - ir.left, cy: r.top - ir.top + r.height / 2 }; };
+    let paths = '';
+    for (const j of a.jobs) {
+      const to = boxes.get(j.key); if (!to) continue;
+      for (const pk of j.predKeys) {
+        const from = boxes.get(pk); if (!from) continue;
+        const rf = rect(from), rt = rect(to);
+        const x1 = rf.r, y1 = rf.cy, x2 = rt.l, y2 = rt.cy;
+        const dx = Math.max(24, (x2 - x1) / 2);
+        const hl = state.selectedJob && (state.selectedJob === j.key || state.selectedJob === pk);
+        paths += `<path class="${hl ? 'hl' : ''}" d="M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2 - 6},${y2}"></path><path class="${hl ? 'hl' : ''}" d="M${x2 - 7},${y2 - 4} L${x2},${y2} L${x2 - 7},${y2 + 4}"></path>`;
+      }
+    }
+    svg.innerHTML = paths;
+  }
+
+  /* ---------- navigation ---------- */
+  function goTab(tab, pushHash) {
+    state.tab = tab; state.selectedJob = null;
+    $('#view-jour').hidden = tab !== 'jour'; $('#view-app').hidden = tab === 'jour';
+    if (pushHash !== false) {
+      const a = state.model && state.model.byKey.get(tab);
+      const h = tab === 'jour' ? 'jour' : (a ? a.slug : 'jour');
+      if (location.hash !== '#' + h) { try { history.replaceState(null, '', '#' + h); } catch (e) { location.hash = h; } }
+    }
+    renderAll();
+    window.scrollTo({ top: 0 });
+  }
+  function applyHash() {
+    const h = (location.hash || '').replace(/^#/, '');
+    if (!state.model) return;
+    if (!h || h === 'jour') { if (state.tab !== 'jour') goTab('jour', false); return; }
+    const a = state.model.bySlug.get(h); if (a && state.tab !== a.key) goTab(a.key, false);
+  }
+
+  /* ---------- loading ---------- */
+  function loadRaw(raw) {
+    state.raw = raw; state.model = buildModel(raw, state.includeDeleted);
+    storeSet({ raw, includeDeleted: state.includeDeleted });
+    $('#fileErr').hidden = true;
+    applyHash(); renderAll();
+  }
+  function readFile(file) {
+    if (!file) return;
+    if (typeof XLSX === 'undefined') { showErr('La bibliothèque de lecture Excel (SheetJS) n’a pas pu être chargée. Vérifiez la connexion réseau puis rechargez la page.'); return; }
+    const fr = new FileReader();
+    fr.onload = e => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: false });
+        loadRaw(parseWorkbook(wb, file.name));
+        goTab('jour');
+      } catch (err) { showErr(err.message || String(err)); }
+    };
+    fr.onerror = () => showErr('Lecture du fichier impossible.');
+    fr.readAsArrayBuffer(file);
+  }
+  function showErr(msg) { const e = $('#fileErr'); e.textContent = msg; e.hidden = false; $('#drop').hidden = false; }
+
+  /* ---------- events ---------- */
+  $('#file').addEventListener('change', e => readFile(e.target.files[0]));
+  const drop = $('#drop');
+  ['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.hidden = false; drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); if (state.model && ev === 'dragleave' && !e.relatedTarget) drop.hidden = true; }));
+  document.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) readFile(f); else if (state.model) drop.hidden = true; });
+
+  $('#simDate').addEventListener('change', e => { state.simDate = e.target.value || null; state.lastMinute = -1; tickClock(); });
+  $('#simTime').addEventListener('change', e => { state.simTime = e.target.value ? toMinutes(e.target.value) : null; state.lastMinute = -1; tickClock(); });
+  $('#btnNow').addEventListener('click', () => { state.simTime = null; state.simDate = null; $('#simTime').value = ''; $('#simDate').value = ''; state.lastMinute = -1; tickClock(); });
+  $('#inclDel').addEventListener('change', e => { state.includeDeleted = e.target.checked; if (state.raw) loadRaw(state.raw); });
+  let searchT; $('#search').addEventListener('input', e => { clearTimeout(searchT); searchT = setTimeout(() => { state.search = e.target.value; renderAll(); }, 120); });
+
+  document.addEventListener('click', e => {
+    const tab = e.target.closest('[data-tab]'); if (tab) { goTab(tab.dataset.tab); return; }
+    const go = e.target.closest('[data-goto]'); if (go) { goTab(go.dataset.goto); return; }
+    const app = e.target.closest('[data-app]'); if (app) { goTab(app.dataset.app); return; }
+    const job = e.target.closest('[data-job]'); if (job) { state.selectedJob = state.selectedJob === job.dataset.job ? null : job.dataset.job; renderAll(); const d = $('#detail'); if (d) d.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); return; }
+    if (e.target.id === 'btnCloseDetail') { state.selectedJob = null; renderAll(); }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const t = e.target.closest('[data-app],[data-job]'); if (t) { e.preventDefault(); t.click(); }
+  });
+  $('#tabSelect').addEventListener('change', e => { if (e.target.value) goTab(e.target.value); });
+  window.addEventListener('hashchange', applyHash);
+  window.addEventListener('resize', () => { if (state.tab !== 'jour' && state.model) { const a = state.model.byKey.get(state.tab); if (a) drawLinks(a); } });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (state.tab !== 'jour' && state.model) { const a = state.model.byKey.get(state.tab); if (a) drawLinks(a); } });
+
+  /* ---------- boot ---------- */
+  const saved = storeGet();
+  if (saved && saved.raw && saved.raw.apps) {
+    state.includeDeleted = !!saved.includeDeleted; $('#inclDel').checked = state.includeDeleted;
+    try { loadRaw(saved.raw); } catch (e) { /* ignore corrupted cache */ }
+  }
+  tickClock(); setInterval(tickClock, 1000);
+})();
+</script>
+</body>
+</html>
