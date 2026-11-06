@@ -17,6 +17,21 @@ journée, avec l'heure courante.
 Options : date de référence et heure simulée (pour rejouer une autre journée), inclusion des lignes en
 `Suppression`, recherche. Le dernier classeur chargé est mémorisé dans le navigateur (localStorage).
 
+## Version hors ligne (poste sans Internet)
+
+`dist/ebv-vtom-en-direct-hors-ligne.html` est la même application en un seul fichier, avec la
+bibliothèque SheetJS et les polices intégrées : elle ne fait aucune requête réseau. C'est ce fichier
+qu'il faut transmettre aux postes dont l'accès Internet est bloqué ; un double-clic suffit.
+
+Après toute modification de `index.html`, régénérer le fichier :
+
+```bash
+python3 build-offline.py
+```
+
+Le script échoue s'il reste une ressource externe dans la page. Les dépendances embarquées sont dans
+`vendor/` (origine, empreinte et licences dans `vendor/README.md`).
+
 ## Ce qui est lu
 
 - Onglet `APP` : APPLICATION, Commentaire, Prédécesseur/Successeur, Heure début / max lancement,
